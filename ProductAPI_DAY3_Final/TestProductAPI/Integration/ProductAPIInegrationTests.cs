@@ -1,6 +1,8 @@
 ﻿using Azure;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using ProductAPI;
+using ProductAPI.Controllers;
 using ProductAPI.Models;
 using System.Net;
 using System.Net.Http.Json;
@@ -74,26 +76,47 @@ namespace TestProductAPI.Integration
 
         //https://localhost:7043/api/Product
 
+        //[Fact]
+        //public async Task CreateProduct_ReturnCreateAtActionAndProduct()
+        //{
+        //    // Arrange
+        //    var product = new Product { Name = "New Product", Price = 20 };
+
+
+        //    // Act
+        //    var res = await _client.PostAsJsonAsync("/api/Product", product);
+
+        //    // Assert
+        //    res.EnsureSuccessStatusCode();
+        //    Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+
+        //    var newProduct = await res.Content.ReadFromJsonAsync<Product>();
+
+        //    Assert.NotNull(newProduct);
+        //    Assert.Equal(product.Name,newProduct.Name);
+
+        //}
+
+
         [Fact]
-        public async Task CreateProduct_ReturnCreateAtActionAndProduct()
+        public async Task CreateProduct_ReturnsCreatedAtActionResult_WithProduct()
         {
             // Arrange
-            var product = new Product { Name = "New Product", Price = 20 };
-
+            var product = new Product { Name = "Test Product", Price = 100 };
+            //_mockProductService.Setup(service => service.CreateProduct(product)).ReturnsAsync(1);
 
             // Act
-            var res = await _client.PostAsJsonAsync("/api/Product", product);
+            var response = await _client.PostAsJsonAsync("/api/Product", product);
 
             // Assert
-            res.EnsureSuccessStatusCode();
-            Assert.Equal(HttpStatusCode.Created, res.StatusCode);
-
-            var newProduct = await res.Content.ReadFromJsonAsync<Product>();
-
-            Assert.NotNull(newProduct);
-            Assert.Equal(product.Name,newProduct.Name);
-
+            response.EnsureSuccessStatusCode();
+            var createdProduct = await response.Content.ReadFromJsonAsync<Product>();
+            Assert.NotNull(createdProduct);
+            //Assert.Equal(1, createdProduct.Id);
+            Assert.Equal("Test Product", createdProduct.Name);
+            Assert.Equal(100, createdProduct.Price);
         }
+
 
         //https://localhost:7043/api/Product/1002
         [Fact]
@@ -138,56 +161,25 @@ namespace TestProductAPI.Integration
             Assert.Equal(HttpStatusCode.NotFound, resDelete.StatusCode);
         }
 
-        //https://localhost:7043/api/Product/5
-        [Fact]
-        public async Task UpdateProduct_WithExistingId_ReturnNoContent()
+        //TODO ... Delete..
+       
+        [Theory]
+        [InlineData(5,5, HttpStatusCode.NoContent)]
+        [InlineData(5, 7, HttpStatusCode.BadRequest)]
+        [InlineData(999, 999, HttpStatusCode.NotFound)]
+        public async Task UpdateProduct_ReturnExpectedStatusCode(int id, int productId,HttpStatusCode expectedStatusCode)
         {
             // Arrange
-            var updateId = 5;
-            var productUpdate = new Product { Id = updateId, Name = "Test Product Update", Price = 10 };
+            var updsteProduct = new Product { Id = productId, Name = "Update Product", Price = 100 };
 
 
             // Act
-            var res = await _client.PutAsJsonAsync($"/api/Product/{updateId}", productUpdate);
+            var res = await _client.PutAsJsonAsync($"/api/Product/{id}", updsteProduct);
 
             // Assert
-            Assert.Equal(HttpStatusCode.NoContent, res.StatusCode);
-
-        }
-
-        //https://localhost:7043/api/Product/5
-        [Fact]
-        public async Task UpdateProduct_WithMismatchId_ReturnBadRequest()
-        {
-            // Arrange
-            var updateId = 5;
-            var productUpdate = new Product { Id = 7, Name = "Test Product Update", Price = 10 };
-
-
-            // Act
-            var res = await _client.PutAsJsonAsync($"/api/Product/{updateId}", productUpdate);
-
-            // Assert
-            Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
-
-        }
-
-        //https://localhost:7043/api/Product/5
-        [Fact]
-        public async Task UpdateProduct_WithNotExistongId_ReturnNotfound()
-        {
-            // Arrange
-            var updateId = 999;
-            var productUpdate = new Product { Id = 999, Name = "Test Product Update", Price = 10 };
-
-
-            // Act
-            var res = await _client.PutAsJsonAsync($"/api/Product/{updateId}", productUpdate);
-
-            // Assert
-            Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
-
+            Assert.Equal(expectedStatusCode, res.StatusCode);
         }
 
     }
 }
+ 
